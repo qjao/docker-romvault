@@ -41,12 +41,12 @@ RUN \
     echo ROMVAULT_DOWNLOAD=${ROMVAULT_DOWNLOAD} && \
     echo RVCMD_DOWNLOAD=${RVCMD_DOWNLOAD} && \
     # Document Versions
-    echo "romvault" $(basename --suffix=.zip $ROMVAULT_DOWNLOAD | cut -d "_" -f 2) >> /VERSIONS && \
-    echo "rvcmd" $(basename --suffix=.zip $RVCMD_DOWNLOAD | cut -d "_" -f 2) >> /VERSIONS && \
+    echo "romvault" $(basename ${ROMVAULT_DOWNLOAD} .zip | cut -d "V" -f 3) >> /VERSIONS && \
+    echo "rvcmd" $(basename ${RVCMD_DOWNLOAD} .zip | cut -d "V" -f 3 | cut -d "-" -f 1) >> /VERSIONS && \
     # Download RomVault
     mkdir -p /defaults/ && mkdir -p /opt/romvault/ && \
-    curl --output /defaults/romvault.zip "https://www.romvault.com/${ROMVAULT_DOWNLOAD}" && \
-    curl --output /defaults/rvcmd.zip "https://www.romvault.com/${RVCMD_DOWNLOAD}" && \
+    curl --output /defaults/romvault.zip "${ROMVAULT_URL}/${ROMVAULT_DOWNLOAD}" && \
+    curl --output /defaults/rvcmd.zip "${ROMVAULT_URL}/${RVCMD_DOWNLOAD}" && \
     unzip /defaults/romvault.zip -d /opt/romvault/ && \
     unzip /defaults/rvcmd.zip -d /opt/romvault/
 

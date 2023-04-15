@@ -41,12 +41,12 @@ RUN \
     echo ROMVAULT_DOWNLOAD=${ROMVAULT_DOWNLOAD} && \
     echo RVCMD_DOWNLOAD=${RVCMD_DOWNLOAD} && \
     # Document Versions
-    echo "romvault" $(basename ${ROMVAULT_DOWNLOAD} .zip | cut -d "V" -f 3) >> /VERSIONS && \
-    echo "rvcmd" $(basename ${RVCMD_DOWNLOAD} .zip | cut -d "V" -f 3 | cut -d "-" -f 1) >> /VERSIONS && \
+    echo "romvault" $(basename --suffix=.zip $ROMVAULT_DOWNLOAD | cut -d "_" -f 2) >> /VERSIONS && \
+    echo "rvcmd" $(basename --suffix=.zip $RVCMD_DOWNLOAD | cut -d "_" -f 2) >> /VERSIONS && \
     # Download RomVault
     mkdir -p /defaults/ && mkdir -p /opt/romvault/ && \
-    curl --output /defaults/romvault.zip "${ROMVAULT_URL}/${ROMVAULT_DOWNLOAD}" && \
-    curl --output /defaults/rvcmd.zip "${ROMVAULT_URL}/${RVCMD_DOWNLOAD}" && \
+    curl --output /defaults/romvault.zip "https://www.romvault.com/${ROMVAULT_DOWNLOAD}" && \
+    curl --output /defaults/rvcmd.zip "https://www.romvault.com/${RVCMD_DOWNLOAD}" && \
     unzip /defaults/romvault.zip -d /opt/romvault/ && \
     unzip /defaults/rvcmd.zip -d /opt/romvault/
 
@@ -57,26 +57,39 @@ RUN \
 
 
 # Pull base image.
-FROM jlesage/baseimage-gui:alpine-3.16-v4.4.0
-
-# Install mono and dependencies.
-RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" | cat - /etc/apk/repositories  > repositories && mv -f repositories /etc/apk && \
-    apk add --no-cache mono libgdiplus gtk+2.0 msttcorefonts-installer && \
-    apk add --no-cache mono-dev git bash automake autoconf findutils make pkgconf libtool g++ && \
-    apk add --no-cache --virtual=.build-dependencies ca-certificates && \
-    cert-sync /etc/ssl/certs/ca-certificates.crt && \
-    update-ms-fonts && \
-    fc-cache -f && \
-    mkdir -p /opt/ && \
-    git clone https://github.com/mono/xsp.git /opt/xsp && \
-    cd /opt/xsp && ./autogen.sh && ./configure --prefix=/usr && make && make install && \
-    rm -rf /opt/xsp && \
-    apk del .build-dependencies && \
-    apk del mono-dev git bash automake autoconf findutils make pkgconf libtool g++
+FROM jlesage/baseimage-gui:ubuntu-20.04-v4.4.0
 
 RUN \
+    LC_ALL=en_US.UTF-8 && LANG=en_US.UTF-8 && LANG=C && \
     APP_ICON_URL=https://www.romvault.com/graphics/romvaultTZ.jpg && \
     install_app_icon.sh "$APP_ICON_URL"
+
+RUN set -x && \
+    LC_ALL=en_US.UTF-8 && LANG=en_US.UTF-8 && LANG=C && \
+    apt-get update && \
+    apt install gnupg ca-certificates -y && \
+    apt install dirmngr gnupg apt-transport-https ca-certificates software-properties-common -y && \
+    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF && \
+    apt-add-repository 'deb https://download.mono-project.com/repo/ubuntu stable-focal main' && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        mono-runtime \
+        libmono-system-servicemodel4.0a-cil \
+        libgtk2.0-0 \
+        mono-complete \
+        xterm \
+        && \
+    # Clean up
+    # apt-get remove -y \
+    #     curl \
+    #     wget \
+    #     ca-certificates \
+    #     unzip \
+    #     && \
+    # apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/* && \
+    echo Finished
 
 # Add files.
 COPY rootfs/ /
